@@ -6,14 +6,39 @@ using System.Collections;
 [RequireComponent(typeof(MeshRenderer))] //it requires a (not null) mesh renderer component
 [RequireComponent(typeof(MeshCollider))] //it requires a (not null) mesh collider component
 public class TileMap : MonoBehaviour {
+
 	public int numTilesX = 100; //100 tiles in x-axis
 	public int numTilesZ = 50; //50 tiles in z-axis
 	public float tileSize = 1.0f;
 
+	public Texture2D terrainTiles;
+	public int tileResolution = 16;
+	
 	// Use this for initialization
 	void Start () {
 		BuildMesh ();
-	
+	}
+
+	void BuildTexture(){
+		int numTilesPerRow = terrainTiles.width / tileResolution;
+		int numRows = terrainTiles.height / tileResolution;
+
+		int texWidth = numTilesX * tileResolution;
+		int texHeight = numTilesZ * tileResolution;
+		Texture2D texture = new Texture2D (texWidth,texHeight);
+
+		for (int z=0; z < numTilesZ; z++) {
+			for(int x=0; x < numTilesX; x++){
+				int tileOffset = Random.Range (0, 3) * tileResolution; 
+				Color[] c = terrainTiles.GetPixels (tileOffset,0, tileResolution, tileResolution);
+				texture.SetPixels(x*tileResolution,z*tileResolution, tileResolution, tileResolution, c);
+			}
+		}
+		texture.filterMode = FilterMode.Point;
+		texture.wrapMode = TextureWrapMode.Clamp;
+		texture.Apply ();
+		MeshRenderer mr = GetComponent<MeshRenderer> ();
+		mr.sharedMaterials[0].mainTexture = texture;
 	}
 
 	public void BuildMesh(){
@@ -36,7 +61,7 @@ public class TileMap : MonoBehaviour {
 			for (x=0; x < numVertX; x++) {
 				vertices[z * numVertX + x]   = new Vector3(x*tileSize,0,z*tileSize);
 				normals[z * numVertX + x]	 = Vector3.up;
-				uv[z * numVertX + x]		 = new Vector2((float) x / numVertX, (float) z / numVertZ);
+				uv[z * numVertX + x]		 = new Vector2((float) x / numTilesX, (float) z / numTilesZ);
 			}
 		}
 
@@ -64,11 +89,13 @@ public class TileMap : MonoBehaviour {
 		mesh.uv 		= uv;
 
 
-		//Applying the mesh to the mesh filter/renderer/collider
+		//Applying the mesh to the mesh filter/collider
 		MeshFilter 		mf = GetComponent<MeshFilter>();
-		MeshRenderer 	mr = GetComponent<MeshRenderer>();
 		MeshCollider 	mc = GetComponent<MeshCollider>();
 
 		mf.mesh = mesh;
+		mc.sharedMesh = mesh;
+
+		BuildTexture ();
 	}
 }
