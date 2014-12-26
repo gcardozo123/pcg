@@ -7,6 +7,7 @@ public class DTileMap {
 		public int top;
 		public int width;
 		public int height;
+		public bool isConnected = false;
 
 		public int right{
 			get {return left + width - 1;}
@@ -15,6 +16,15 @@ public class DTileMap {
 		public int bottom{
 			get { return top + height - 1;}
 		}
+
+		public int center_x{
+			get {return left + width/2;}
+		}
+
+		public int center_y{
+			get {return top + height/2;}
+		}
+
 		public bool CollidesWith(DRoom other){
 			if (left > other.right) {
 				return false;
@@ -46,6 +56,7 @@ public class DTileMap {
 	List<DRoom> rooms;
 
 	public DTileMap(int size_x, int size_y){
+		DRoom r;
 		this.size_x = size_x;
 		this.size_y = size_y;
 
@@ -58,12 +69,13 @@ public class DTileMap {
 		}
 
 		rooms = new List<DRoom> ();
+		int maxFails = 10;
+		//for (int i=0; i < 10; i++) {
+		while (rooms.Count < 10){
+			int rsx = Random.Range(6,12);
+			int rsy = Random.Range(6,10);
 
-		for (int i=0; i < 10; i++) {
-			int rsx = Random.Range(4,8);
-			int rsy = Random.Range(4,8);
-
-			DRoom r = new DRoom();
+			r = new DRoom();
 			r.left = Random.Range(0, size_x - rsx);
 			r.top =  Random.Range (0, size_y - rsy);
 			r.width = rsx;
@@ -72,10 +84,24 @@ public class DTileMap {
 			if(!RoomCollides(r)){
 				rooms.Add(r);
 			}
+			else{
+				maxFails--;
+				if(maxFails <=0){
+					break;
+				}
+			}
 		}
 		foreach(DRoom r2 in rooms){
 			MakeRoom(r2);
 		}
+
+		for(int i = 0; i < rooms.Count; i++){
+			if(!rooms[i].isConnected){
+				int j = Random.Range (1, rooms.Count);
+				MakeCorridor(rooms[i], rooms[(i+j) % rooms.Count]);
+			}
+		}
+
 
 	}
 
@@ -103,5 +129,25 @@ public class DTileMap {
 				}
 			}
 		}
+	}
+
+	void MakeCorridor(DRoom r1, DRoom r2){
+		int x = r1.center_x;
+		int y = r1.center_y;
+
+		while (x != r2.center_x) {
+			map_data[x,y] = TILE_FLOOR;
+			//Move x wise
+			x += x < r2.center_x ? 1 : -1;
+		}
+
+		while (y != r2.center_y) {
+			map_data[x,y] = TILE_FLOOR;
+			//Move y wise
+			y += y < r2.center_y ? 1 : -1;
+
+		}
+		r1.isConnected = true;
+		r2.isConnected = true;
 	}
 }
